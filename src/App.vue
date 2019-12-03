@@ -32,8 +32,7 @@ export default {
       },
       runtime: {
         startTime: undefined,
-        position: 0,
-        speed: 0
+        position: 0
       }
     };
   },
@@ -55,23 +54,35 @@ export default {
       }
     },
     calculatePosition(max) {
-      const a = this.accConsts.acceleration;
+      const a = this.accConsts.acceleration; // um/s2
       const j = this.accConsts.jerk;
 
-      const v = this.runtime.speed;
+      const v0 = 0;
       const t = this.deltaTimeMs();
       const p = this.runtime.position;
+
+      const position = v0 * t + (1 / 2) * (a * (t * t));
+      const speed = v0 * t + a * t;
+
+      this.position = position;
+
+      console.log(
+        `v0 (um/s)=${v0}, t (ms)=${t}, a (um/s^2)=${a}, j (um/s^2)=${j}, position=${position}, speed=${speed}`
+      );
+      return position;
+
       /*
       const position = p * t + v * t + (1 / 2) * (a * t) + (1 / 6) * j;
       console.log(`v=${v}, t=${t}, a=${a}, j=${j}, position=${position}`);
 */
-      return Math.floor(Math.random() * Math.floor(max));
+      // return Math.floor(Math.random() * Math.floor(max));
     },
     deltaTimeMs() {
       let delta = 0;
       if (this.runtime.startTime) {
         const currentDate = new Date();
         delta = currentDate - this.runtime.startTime;
+        delta = delta / 1000;
       }
       return delta;
     }
