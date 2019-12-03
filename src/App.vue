@@ -26,7 +26,15 @@ export default {
   data() {
     return {
       trendData: [],
-      timeMs: 0
+      accConsts: {
+        acceleration: 500, // ums^2
+        jerk: 100 // acc per adjust cycle
+      },
+      runtime: {
+        startTime: undefined,
+        position: 0,
+        speed: 0
+      }
     };
   },
   methods: {
@@ -34,10 +42,9 @@ export default {
       this.trendData = [];
     },
     start() {
-      console.log("start");
       this.stop();
+      this.runtime.startTime = new Date();
       this.timerId = setInterval(() => {
-        this.timeMs = this.timeMs + periodMs;
         this.trendData.push(this.calculatePosition(20000));
       }, periodMs);
     },
@@ -48,7 +55,25 @@ export default {
       }
     },
     calculatePosition(max) {
+      const a = this.accConsts.acceleration;
+      const j = this.accConsts.jerk;
+
+      const v = this.runtime.speed;
+      const t = this.deltaTimeMs();
+      const p = this.runtime.position;
+      /*
+      const position = p * t + v * t + (1 / 2) * (a * t) + (1 / 6) * j;
+      console.log(`v=${v}, t=${t}, a=${a}, j=${j}, position=${position}`);
+*/
       return Math.floor(Math.random() * Math.floor(max));
+    },
+    deltaTimeMs() {
+      let delta = 0;
+      if (this.runtime.startTime) {
+        const currentDate = new Date();
+        delta = currentDate - this.runtime.startTime;
+      }
+      return delta;
     }
   },
   timerId: null
