@@ -1,13 +1,15 @@
 <template>
   <div id="app">
     <img alt="Vue logo" src="./assets/logo.png" />
+    <div>
+      <b-button-group>
+        <b-button class="mr-2" @click="reset" variant="outline-secondary">Reset</b-button>
+        <b-button class="mr-2" @click="stop" variant="outline-danger">Stop</b-button>
+        <b-button @click="start" variant="outline-primary">Start</b-button>
+      </b-button-group>
+    </div>
     <div class="small">
       <TrendLine :trendData="trendData"></TrendLine>
-    </div>
-    <div>
-      <button @click="reset">Reset</button>
-      <button @click="start">Start</button>
-      <button @click="stop">Stop</button>
     </div>
   </div>
 </template>
