@@ -132,7 +132,7 @@ export default {
         retVal = this.calculatePositionConvex();
       } else {
         // Just for testing purpose
-        retVal = Math.floor(Math.random() * Math.floor(20000));
+        retVal = Math.floor(Math.random() * Math.floor(this.accConsts.targetPos));
       }
       return retVal;
     },
@@ -183,11 +183,6 @@ export default {
   text-align: center;
   color: #2c3e50;
   margin-top: 60px;
-}
-
-.small {
-  max-width: 600px;
-  margin: 150px auto;
 }
 
 .em {
