@@ -7,7 +7,10 @@
         -->
         <b-jumbotron variant="info" header-tag="h3">
           <template v-slot:header>
-            {{runtime.position}}
+            {{runtimeTimeTxt}}
+          </template>
+          <template v-slot:lead>
+            {{runtimePosTxt}}
           </template>
         </b-jumbotron>
 
@@ -73,7 +76,8 @@ export default {
       },
       runtime: {
         startTime: undefined,
-        position: 0
+        position: 0,
+        time: 0
       },
       timerId: null
     };
@@ -81,23 +85,34 @@ export default {
   computed: {
     isActive() {
       return this.timerId ? true : false;
+    },
+    runtimeTimeTxt () {
+      const timeTxt = parseFloat(this.runtime.time).toFixed(3)
+      return `${timeTxt} s`
+    },
+    runtimePosTxt () {
+      const dataTxt = parseFloat(this.runtime.position).toFixed(1)
+      return `${dataTxt} um`
     }
+
   },
   methods: {
     reset() {
       this.trendData = [];
       this.runtime.position = 0
+      this.runtime.time = 0
     },
     start() {
       this.stop();
       this.runtime.startTime = new Date();
       this.timerId = setInterval(() => {
-        const pos = this.calculatePosition()
+        const pos = this.calculatePosition();
         if (pos >= this.accConsts.targetPos) {
           this.stop()
         } else {
           this.trendData.push(pos);
-          this.runtime.position = parseFloat(pos).toFixed(1)
+          this.runtime.position = pos;
+          this.runtime.time = this.deltaTimeMs();
         }
       }, this.accConsts.period);
     },
@@ -145,7 +160,7 @@ export default {
       const position = v0 * t + (1 / 2) * (a * (t * t));
       const speed = v0 * t + a * t;
 
-      this.position = position;
+      // this.position = position;
 
       console.log(
         `v0 (um/s)=${v0}, t (ms)=${t}, a (um/s^2)=${a}, j (um/s^2)=${j}, position=${position}, speed=${speed}`
@@ -154,7 +169,7 @@ export default {
     },
     calculatePositionConvex() {
       // TODO. Calculation
-      return 3000;
+      return 1900;
     }
   }
 };
