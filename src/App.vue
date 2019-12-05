@@ -1,8 +1,16 @@
 <template>
   <b-container id="app">
     <b-row align-h="center">
-      <b-col cols="4">
+      <b-col cols="6">
+        <!--
         <img alt="Vue logo" src="./assets/logo.png" />
+        -->
+        <b-jumbotron variant="info" header-tag="h3">
+          <template v-slot:header>
+            {{runtime.position}}
+          </template>
+        </b-jumbotron>
+
         <div>
           <b-input-group prepend="Initial speed" append="um/s">
             <b-form-input v-model.number="accConsts.v0"></b-form-input>
@@ -10,15 +18,18 @@
           <b-input-group prepend="Acceleration" append="um/s^2">
             <b-form-input v-model.number="accConsts.acceleration"></b-form-input>
           </b-input-group>
-          <b-input-group prepend="Jerk" append="um/s^2">
+          <b-input-group prepend="Target" append="um">
+            <b-form-input v-model.number="accConsts.targetPos"></b-form-input>
+          </b-input-group>
+          <b-input-group prepend="Jerk" append="%">
             <b-form-input v-model.number="accConsts.jerk"></b-form-input>
           </b-input-group>
           <b-input-group prepend="Period" append="ms">
             <b-form-input v-model.number="accConsts.period"></b-form-input>
           </b-input-group>
           <b-form-radio-group class="mt-2" v-model="accConsts.phase">
-            <b-form-radio v-model="accConsts.phase" value="convey">Convey</b-form-radio>
-            <b-form-radio v-model="accConsts.phase" value="steady">Steady</b-form-radio>
+            <b-form-radio v-model="accConsts.phase" value="concave">Concave</b-form-radio>
+            <b-form-radio v-model="accConsts.phase" value="linear">Linear</b-form-radio>
             <b-form-radio v-model="accConsts.phase" value="convex">Convex</b-form-radio>
           </b-form-radio-group>
           <b-form-radio class="em" v-model="accConsts.phase" value="random">Random (for testing)</b-form-radio>
@@ -30,11 +41,9 @@
         </div>
       </b-col>
     </b-row>
-    <b-row align-h="center">
-      <b-col cols="8">
-        <div class="small">
-          <TrendLine :trendData="trendData"></TrendLine>
-        </div>
+    <b-row class="mt-5" align-h="center">
+      <b-col>
+        <TrendLine :trendData="trendData"></TrendLine>
       </b-col>
     </b-row>
   </b-container>
@@ -42,9 +51,9 @@
 
 <script>
 import TrendLine from "./components/TrendLine.vue";
-const CONVEY = "convey";
+const CONCAVE = "concave";
+const LINEAR = "linear";
 const CONVEX = "convex";
-const STEADY = "steady";
 
 export default {
   name: "app",
@@ -57,9 +66,10 @@ export default {
       accConsts: {
         v0: 0,
         acceleration: 500, // ums^2
-        jerk: 100, // acc per adjust cycle
-        phase: "steady",
-        period: 100
+        jerk: 25, // percentage from max
+        phase: "linear",
+        period: 100,
+        targetPos: 2000 // um
       },
       runtime: {
         startTime: undefined,
@@ -76,12 +86,19 @@ export default {
   methods: {
     reset() {
       this.trendData = [];
+      this.runtime.position = 0
     },
     start() {
       this.stop();
       this.runtime.startTime = new Date();
       this.timerId = setInterval(() => {
-        this.trendData.push(this.calculatePosition(20000));
+        const pos = this.calculatePosition()
+        if (pos >= this.accConsts.targetPos) {
+          this.stop()
+        } else {
+          this.trendData.push(pos);
+          this.runtime.position = parseFloat(pos).toFixed(1)
+        }
       }, this.accConsts.period);
     },
     stop() {
@@ -90,17 +107,17 @@ export default {
         this.timerId = null;
       }
     },
-    calculatePosition(max) {
+    calculatePosition() {
       let retVal;
-      if (this.accConsts.phase === CONVEY) {
-        retVal = this.calculatePositionConvey();
-      } else if (this.accConsts.phase === STEADY) {
-        retVal = this.calculatePositionSteady();
+      if (this.accConsts.phase === CONCAVE) {
+        retVal = this.calculatePositionConcave();
+      } else if (this.accConsts.phase === LINEAR) {
+        retVal = this.calculatePositionlinear();
       } else if (this.accConsts.phase === CONVEX) {
         retVal = this.calculatePositionConvex();
       } else {
-        // Just for testign purpose
-        retVal = Math.floor(Math.random() * Math.floor(max));
+        // Just for testing purpose
+        retVal = Math.floor(Math.random() * Math.floor(20000));
       }
       return retVal;
     },
@@ -113,11 +130,11 @@ export default {
       }
       return delta;
     },
-    calculatePositionConvey() {
+    calculatePositionConcave() {
       // TODO. Calculation
       return 1000;
     },
-    calculatePositionSteady() {
+    calculatePositionlinear() {
       const a = this.accConsts.acceleration;
       const j = this.accConsts.jerk;
 
