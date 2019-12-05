@@ -10,7 +10,16 @@
             {{runtimeTimeTxt}}
           </template>
           <template v-slot:lead>
-            {{runtimePosTxt}}
+            <b-table-simple stacked small>
+              <b-tbody>
+                <b-tr>
+                  <b-td stacked-heading="Position">{{runtimePosTxt}}</b-td>
+                </b-tr>
+                <b-tr>
+                  <b-td stacked-heading="Avg.spd">{{runtimeAverageSpeedTxt}}</b-td>
+                </b-tr>
+              </b-tbody>
+            </b-table-simple>
           </template>
         </b-jumbotron>
 
@@ -93,8 +102,14 @@ export default {
     runtimePosTxt () {
       const dataTxt = parseFloat(this.runtime.position).toFixed(1)
       return `${dataTxt} um`
+    },
+    runtimeAverageSpeedTxt () {
+      let dataTxt = 0
+      if (this.runtime.time) {
+        dataTxt = parseFloat(this.runtime.position/this.runtime.time).toFixed(2)
+      }
+      return `${dataTxt} um/s`
     }
-
   },
   methods: {
     reset() {
@@ -159,12 +174,11 @@ export default {
 
       const position = v0 * t + (1 / 2) * (a * (t * t));
       const speed = v0 * t + a * t;
-
-      // this.position = position;
-
+      /*
       console.log(
         `v0 (um/s)=${v0}, t (ms)=${t}, a (um/s^2)=${a}, j (um/s^2)=${j}, position=${position}, speed=${speed}`
       );
+      */
       return position;
     },
     calculatePositionConvex() {
