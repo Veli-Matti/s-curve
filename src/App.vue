@@ -5,7 +5,7 @@
         <!--
         <img alt="Vue logo" src="./assets/logo.png" />
         -->
-        <b-jumbotron variant="info" header-tag="h3">
+        <b-jumbotron header-level="4">
           <template v-slot:header>
             {{runtimeTimeTxt}}
           </template>
@@ -33,9 +33,25 @@
         </b-jumbotron>
 
         <div>
-          <b-input-group prepend="Initial speed" append="um/s">
-            <b-form-input v-model.number="accConsts.v0"></b-form-input>
+          <b-input-group append="um/s">
+            <template v-slot:prepend>
+              <b-input-group-text class="bg-light">
+                Initial speed (convex)
+              </b-input-group-text>
+            </template>
+            <b-form-input v-model.number="accConsts.convexV0"></b-form-input>
           </b-input-group>
+          <b-input-group append="s">
+            <template v-slot:prepend>
+              <b-input-group-text class="bg-light">
+                Initial time (convex)
+              </b-input-group-text>
+            </template>
+            <b-form-input v-model.number="accConsts.convexInitTime"></b-form-input>
+          </b-input-group>
+        </div>
+
+        <div class="mt-4">
           <b-input-group prepend="Target speed" append="um/s">
             <b-form-input v-model.number="accConsts.targetSpeed"></b-form-input>
           </b-input-group>
@@ -98,10 +114,11 @@ export default {
     return {
       trendData: [],
       accConsts: {
-        v0: 0,
+        convexV0: 500, // um/s
+        convexInitTime: 1, // s
         acceleration: 500, // ums^2
         jerk: 25, // percentage from max
-        phase: CONCAVE,
+        phase: CONVEX,
         period: 100, // ms
         targetPos: 2000, // um
         targetSpeed: 1000 // ums/s
@@ -128,11 +145,11 @@ export default {
       return `${timeTxt} s`
     },
     runtimePosTxt () {
-      const dataTxt = parseFloat(this.runtime.position).toFixed(1)
+      const dataTxt = parseFloat(this.runtime.position).toFixed(3)
       return `${dataTxt} um`
     },
     runtimeSpeedTxt() {
-      let dataTxt = parseFloat(this.runtime.speed).toFixed(2)
+      let dataTxt = parseFloat(this.runtime.speed).toFixed(3)
       return `${dataTxt} um/s`
     },
     runtimeAverageSpeedTxt () {
@@ -142,7 +159,7 @@ export default {
       } else {
         data = parseFloat(0)
       }
-      const dataTxt = parseFloat(data).toFixed(2)
+      const dataTxt = parseFloat(data).toFixed(3)
       return `${dataTxt} um/s`
     }
   },
@@ -210,11 +227,11 @@ export default {
       return retVal;
     },
     resolveRuntimeConcave(t) {
-      const v0 = this.accConsts.v0;
+      const v0 = 0;
       const delta = this.resolveRuntimeconvXXDelta(t)
 
-      const position = v0 * t + delta
-      const speed = v0  + this.jerk*(t*t)/2;
+      const position = (v0 * t) + delta
+      const speed = v0 + (this.jerk*(t*t)/2);
 
       return new runtimeResult(t, speed, position)
     },
@@ -225,17 +242,22 @@ export default {
       const p = this.runtime.position;
 
       const position = v0 * t + (1 / 2) * (a * (t * t));
-      const speed = v0 * t + a * t;
+      const speed = (v0 * t) + (a * t);
       return new runtimeResult(t, speed, position);
     },
     resolveRuntimeConvex(t) {
       const position = 900;
-      const speed = 0;
-      return new runtimeResult(t, speed, position);
+      const speed = 10;
+      const a = this.accConsts.acceleration;
+      const v0 = this.accConsts.convexV0;
+      const tmpPos = v0*t + a*(t*t)/2 - this.resolveRuntimeconvXXDelta(t)
+      const tmpSpeed = v0 + a*t - this.jerk*(t*t)/2
+      console.log(`a=${a}, v0=${v0}, tmpPos=${tmpPos}, tmpSpeed=${tmpSpeed}`);
+      return new runtimeResult(t, tmpSpeed, tmpPos);
     },
     resolveRuntimeconvXXDelta(t) {
       const j = this.jerk;
-      return (j * (t * t * t) / 6);
+      return j * (t * t * t) / 6;
     },
     resolveRuntimeRandom(t) {
       const position = Math.floor(Math.random() * Math.floor(this.accConsts.targetPos));
