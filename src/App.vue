@@ -16,6 +16,9 @@
                   <b-td stacked-heading="Position">{{runtimePosTxt}}</b-td>
                 </b-tr>
                 <b-tr>
+                  <b-td stacked-heading="Speed">{{runtimeSpeedTxt}}</b-td>
+                </b-tr>
+                <b-tr>
                   <b-td stacked-heading="Avg.spd">{{runtimeAverageSpeedTxt}}</b-td>
                 </b-tr>
               </b-tbody>
@@ -67,6 +70,14 @@ const CONCAVE = "concave";
 const LINEAR = "linear";
 const CONVEX = "convex";
 
+class runtimeResult {
+  constructor(time, speed, position) {
+    this.time = time;
+    this.speed = speed;
+    this.position = position;
+  }
+}
+
 export default {
   name: "app",
   components: {
@@ -86,6 +97,7 @@ export default {
       runtime: {
         startTime: undefined,
         position: 0,
+        speed: 0,
         time: 0
       },
       timerId: null
@@ -106,11 +118,18 @@ export default {
       const dataTxt = parseFloat(this.runtime.position).toFixed(1)
       return `${dataTxt} um`
     },
+    runtimeSpeedTxt() {
+      let dataTxt = parseFloat(this.runtime.speed).toFixed(2)
+      return `${dataTxt} um/s`
+    },
     runtimeAverageSpeedTxt () {
-      let dataTxt = 0
+      let data
       if (this.runtime.time) {
-        dataTxt = parseFloat(this.runtime.position/this.runtime.time).toFixed(2)
+        data = parseFloat(this.runtime.position/this.runtime.time)
+      } else {
+        data = parseFloat(0)
       }
+      const dataTxt = parseFloat(data).toFixed(2)
       return `${dataTxt} um/s`
     }
   },
@@ -119,17 +138,20 @@ export default {
       this.trendData = [];
       this.runtime.position = 0
       this.runtime.time = 0
+      this.runtime.speed = 0
     },
     start() {
       this.stop();
       this.runtime.startTime = new Date();
       this.timerId = setInterval(() => {
-        const pos = this.calculatePosition();
+        const runtimeObj = this.resolveRuntime();
+        const pos = runtimeObj.position
         if (pos >= this.accConsts.targetPos || pos <= 0) {
           this.stop()
         } else {
           this.trendData.push(pos);
           this.runtime.position = pos;
+          this.runtime.speed = runtimeObj.speed;
           this.runtime.time = this.deltaTimeMs();
         }
       }, this.accConsts.period);
@@ -140,20 +162,6 @@ export default {
         this.timerId = null;
       }
     },
-    calculatePosition() {
-      let retVal;
-      if (this.accConsts.phase === CONCAVE) {
-        retVal = this.calculatePositionConcave();
-      } else if (this.accConsts.phase === LINEAR) {
-        retVal = this.calculatePositionlinear();
-      } else if (this.accConsts.phase === CONVEX) {
-        retVal = this.calculatePositionConvex();
-      } else {
-        // Just for testing purpose
-        retVal = Math.floor(Math.random() * Math.floor(this.accConsts.targetPos));
-      }
-      return retVal;
-    },
     deltaTimeMs() {
       let delta = 0;
       if (this.runtime.startTime) {
@@ -163,43 +171,51 @@ export default {
       }
       return delta;
     },
-    calculatePositionConcave() {
-      const v0 = this.accConsts.v0;
-      const t = this.deltaTimeMs();
-      const delta = this.calculatePositionconvXXDelta(t)
-      const position = v0 * t + delta
-      return position
+    resolveRuntime() {
+      let retVal;
+      const timeStamp = this.deltaTimeMs();
+      if (this.accConsts.phase === CONCAVE) {
+        retVal = this.resolveRuntimeConcave(timeStamp);
+      } else if (this.accConsts.phase === LINEAR) {
+        retVal = this.resolveRuntimeLinear(timeStamp);
+      } else if (this.accConsts.phase === CONVEX) {
+        retVal = this.resolveRuntimeConvex(timeStamp);
+      } else {
+        retVal = this.resolveRuntimeRandom(timeStamp)
+      }
+      return retVal;
     },
-    calculatePositionlinear() {
+    resolveRuntimeConcave(t) {
+      const v0 = this.accConsts.v0;
+      const delta = this.resolveRuntimeconvXXDelta(t)
+
+      const position = v0 * t + delta
+      const speed = v0  + this.jerk*(t*t)/2;
+
+      return new runtimeResult(t, speed, position)
+    },
+    resolveRuntimeLinear(t) {
       const a = this.accConsts.acceleration;
 
       const v0 = 0;
-      const t = this.deltaTimeMs();
       const p = this.runtime.position;
 
       const position = v0 * t + (1 / 2) * (a * (t * t));
       const speed = v0 * t + a * t;
-      /*
-      console.log(
-        `v0 (um/s)=${v0}, t (ms)=${t}, a (um/s^2)=${a}, j (um/s^2)=${j}, position=${position}, speed=${speed}`
-      );
-      */
-      return position;
+      return new runtimeResult(t, speed, position);
     },
-    calculatePositionConvex() {
-      return 900;
-      /*
-      const v0 = this.accConsts.v0;
-      const t = this.deltaTimeMs();
-      const delta = this.calculatePositionconvXXDelta(t)
-      const position = v0 * t - delta
-      console.log('convex: ', position)
-      return position
-      */
+    resolveRuntimeConvex(t) {
+      const position = 900;
+      const speed = 0;
+      return new runtimeResult(t, speed, position);
     },
-    calculatePositionconvXXDelta(t) {
+    resolveRuntimeconvXXDelta(t) {
       const j = this.jerk;
       return (j * (t * t * t) / 6);
+    },
+    resolveRuntimeRandom(t) {
+      const position = Math.floor(Math.random() * Math.floor(this.accConsts.targetPos));
+      return new runtimeResult(t, 0, position)
     }
   }
 }
