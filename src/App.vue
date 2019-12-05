@@ -36,8 +36,8 @@
           <b-input-group prepend="Initial speed" append="um/s">
             <b-form-input v-model.number="accConsts.v0"></b-form-input>
           </b-input-group>
-          <b-input-group prepend="Max speed" append="um/s">
-            <b-form-input v-model.number="accConsts.maxSpeed"></b-form-input>
+          <b-input-group prepend="Target speed" append="um/s">
+            <b-form-input v-model.number="accConsts.targetSpeed"></b-form-input>
           </b-input-group>
           <b-input-group prepend="Max acceleration" append="um/s^2">
             <b-form-input v-model.number="accConsts.acceleration"></b-form-input>
@@ -104,7 +104,7 @@ export default {
         phase: CONCAVE,
         period: 100, // ms
         targetPos: 2000, // um
-        maxSpeed: 1000 // ums/s
+        targetSpeed: 1000 // ums/s
       },
       runtime: {
         startTime: undefined,
@@ -162,21 +162,21 @@ export default {
         const runtimeObj = this.resolveRuntime();
         const pos = runtimeObj.position
         // Stop when we have reached
-        // ... position or speedd limits
+        // ... position or speed limits
         let stopReason
         if (pos >= this.accConsts.targetPos || pos <= 0) {
           stopReason = POSITION
-        } else if (runtimeObj.speed >= this.accConsts.maxSpeed) {
+        } else if (runtimeObj.speed >= this.accConsts.targetSpeed) {
           stopReason = SPEED
         }
-        if (stopReason) { // This works at acc only
+        if (stopReason) { // This works for acceleration only
           this.stop()
           this.runtime.stopReason = stopReason
         } else {
           this.trendData.push(pos);
           this.runtime.position = pos;
           this.runtime.speed = runtimeObj.speed;
-          this.runtime.time = this.deltaTimeMs();
+          this.runtime.time = runtimeObj.time;
         }
       }, this.accConsts.period);
     },
