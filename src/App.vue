@@ -13,10 +13,16 @@
             <b-table-simple stacked small>
               <b-tbody>
                 <b-tr>
-                  <b-td stacked-heading="Position">{{runtimePosTxt}}</b-td>
+                  <b-td stacked-heading="Position"
+                    :class="{'text-danger': runtime.stopReason==='position'}">
+                    {{runtimePosTxt}}
+                  </b-td>
                 </b-tr>
                 <b-tr>
-                  <b-td stacked-heading="Speed">{{runtimeSpeedTxt}}</b-td>
+                  <b-td stacked-heading="Speed"
+                    :class="{'text-danger': runtime.stopReason==='speed'}">
+                    {{runtimeSpeedTxt}}
+                  </b-td>
                 </b-tr>
                 <b-tr>
                   <b-td stacked-heading="Avg.spd">{{runtimeAverageSpeedTxt}}</b-td>
@@ -29,6 +35,9 @@
         <div>
           <b-input-group prepend="Initial speed" append="um/s">
             <b-form-input v-model.number="accConsts.v0"></b-form-input>
+          </b-input-group>
+          <b-input-group prepend="Max speed" append="um/s">
+            <b-form-input v-model.number="accConsts.maxSpeed"></b-form-input>
           </b-input-group>
           <b-input-group prepend="Max acceleration" append="um/s^2">
             <b-form-input v-model.number="accConsts.acceleration"></b-form-input>
@@ -69,6 +78,8 @@ import TrendLine from "./components/TrendLine.vue";
 const CONCAVE = "concave";
 const LINEAR = "linear";
 const CONVEX = "convex";
+const POSITION = "position"
+const SPEED = "speed"
 
 class runtimeResult {
   constructor(time, speed, position) {
@@ -91,14 +102,16 @@ export default {
         acceleration: 500, // ums^2
         jerk: 25, // percentage from max
         phase: CONCAVE,
-        period: 100,
-        targetPos: 2000 // um
+        period: 100, // ms
+        targetPos: 2000, // um
+        maxSpeed: 1000 // ums/s
       },
       runtime: {
         startTime: undefined,
         position: 0,
         speed: 0,
-        time: 0
+        time: 0,
+        stopReason: ""
       },
       timerId: null
     };
@@ -139,15 +152,26 @@ export default {
       this.runtime.position = 0
       this.runtime.time = 0
       this.runtime.speed = 0
+      this.runtime.stopReason = ""
     },
     start() {
       this.stop();
+      this.runtime.stopReason = ""
       this.runtime.startTime = new Date();
       this.timerId = setInterval(() => {
         const runtimeObj = this.resolveRuntime();
         const pos = runtimeObj.position
+        // Stop when we have reached
+        // ... position or speedd limits
+        let stopReason
         if (pos >= this.accConsts.targetPos || pos <= 0) {
+          stopReason = POSITION
+        } else if (runtimeObj.speed >= this.accConsts.maxSpeed) {
+          stopReason = SPEED
+        }
+        if (stopReason) { // This works at acc only
           this.stop()
+          this.runtime.stopReason = stopReason
         } else {
           this.trendData.push(pos);
           this.runtime.position = pos;
