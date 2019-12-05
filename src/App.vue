@@ -27,7 +27,7 @@
           <b-input-group prepend="Initial speed" append="um/s">
             <b-form-input v-model.number="accConsts.v0"></b-form-input>
           </b-input-group>
-          <b-input-group prepend="Acceleration" append="um/s^2">
+          <b-input-group prepend="Max acceleration" append="um/s^2">
             <b-form-input v-model.number="accConsts.acceleration"></b-form-input>
           </b-input-group>
           <b-input-group prepend="Target" append="um">
@@ -79,7 +79,7 @@ export default {
         v0: 0,
         acceleration: 500, // ums^2
         jerk: 25, // percentage from max
-        phase: "linear",
+        phase: CONCAVE,
         period: 100,
         targetPos: 2000 // um
       },
@@ -94,6 +94,9 @@ export default {
   computed: {
     isActive() {
       return this.timerId ? true : false;
+    },
+    jerk () {
+      return this.accConsts.acceleration * (this.accConsts.jerk / 100)
     },
     runtimeTimeTxt () {
       const timeTxt = parseFloat(this.runtime.time).toFixed(3)
@@ -122,7 +125,7 @@ export default {
       this.runtime.startTime = new Date();
       this.timerId = setInterval(() => {
         const pos = this.calculatePosition();
-        if (pos >= this.accConsts.targetPos) {
+        if (pos >= this.accConsts.targetPos || pos <= 0) {
           this.stop()
         } else {
           this.trendData.push(pos);
@@ -161,12 +164,14 @@ export default {
       return delta;
     },
     calculatePositionConcave() {
-      // TODO. Calculation
-      return 1000;
+      const v0 = this.accConsts.v0;
+      const t = this.deltaTimeMs();
+      const delta = this.calculatePositionconvXXDelta(t)
+      const position = v0 * t + delta
+      return position
     },
     calculatePositionlinear() {
       const a = this.accConsts.acceleration;
-      const j = this.accConsts.jerk;
 
       const v0 = 0;
       const t = this.deltaTimeMs();
@@ -182,11 +187,22 @@ export default {
       return position;
     },
     calculatePositionConvex() {
-      // TODO. Calculation
-      return 1900;
+      return 900;
+      /*
+      const v0 = this.accConsts.v0;
+      const t = this.deltaTimeMs();
+      const delta = this.calculatePositionconvXXDelta(t)
+      const position = v0 * t - delta
+      console.log('convex: ', position)
+      return position
+      */
+    },
+    calculatePositionconvXXDelta(t) {
+      const j = this.jerk;
+      return (j * (t * t * t) / 6);
     }
   }
-};
+}
 </script>
 
 <style>
@@ -202,4 +218,5 @@ export default {
 .em {
   font-style: italic;
 }
+
 </style>
