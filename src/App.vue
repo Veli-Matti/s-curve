@@ -39,7 +39,7 @@
                 Initial speed (convex)
               </b-input-group-text>
             </template>
-            <b-form-input v-model.number="accConsts.convexV0"></b-form-input>
+            <b-form-input v-model.number="accConsts.convexV2"></b-form-input>
           </b-input-group>
           <b-input-group append="s">
             <template v-slot:prepend>
@@ -114,7 +114,7 @@ export default {
     return {
       trendData: [],
       accConsts: {
-        convexV0: 500, // um/s
+        convexV2: 1000, // um/s
         convexInitTime: 1, // s
         acceleration: 500, // ums^2
         jerk: 25, // percentage from max
@@ -175,24 +175,36 @@ export default {
       this.stop();
       this.runtime.stopReason = ""
       this.runtime.startTime = new Date();
+
+      // just for debugging
+      this.dbgConvexEstimateMaxSpeedPosition();
       this.timerId = setInterval(() => {
         const runtimeObj = this.resolveRuntime();
         const pos = runtimeObj.position
+        const speed = runtimeObj.speed
         // Stop when we have reached
         // ... position or speed limits
         let stopReason
-        if (pos >= this.accConsts.targetPos || pos <= 0) {
+        // Special nadling for convex
+        if (this.accConsts.phase === CONVEX) {
+          if (speed <= 0) {
+            stopReason = SPEED
+          }
+        } else if (pos >= this.accConsts.targetPos || pos <= 0) {
           stopReason = POSITION
-        } else if (runtimeObj.speed >= this.accConsts.targetSpeed) {
+        } else if (speed >= this.accConsts.targetSpeed) {
           stopReason = SPEED
         }
         if (stopReason) { // This works for acceleration only
           this.stop()
           this.runtime.stopReason = stopReason
         } else {
-          this.trendData.push(pos);
+          // Draw the curve (speed/pos)
+          // this.trendData.push(pos);
+          this.trendData.push(speed);
+
           this.runtime.position = pos;
-          this.runtime.speed = runtimeObj.speed;
+          this.runtime.speed = speed;
           this.runtime.time = runtimeObj.time;
         }
       }, this.accConsts.period);
@@ -241,19 +253,25 @@ export default {
       const v0 = 0;
       const p = this.runtime.position;
 
-      const position = v0 * t + (1 / 2) * (a * (t * t));
+      const position = (v0 * t) + (1 / 2) * (a * (t * t));
       const speed = (v0 * t) + (a * t);
       return new runtimeResult(t, speed, position);
     },
     resolveRuntimeConvex(t) {
-      const position = 900;
-      const speed = 10;
       const a = this.accConsts.acceleration;
-      const v0 = this.accConsts.convexV0;
-      const tmpPos = v0*t + a*(t*t)/2 - this.resolveRuntimeconvXXDelta(t)
-      const tmpSpeed = v0 + a*t - this.jerk*(t*t)/2
-      console.log(`a=${a}, v0=${v0}, tmpPos=${tmpPos}, tmpSpeed=${tmpSpeed}`);
-      return new runtimeResult(t, tmpSpeed, tmpPos);
+      const v2 = this.accConsts.convexV2;
+      // const v2 = 0
+      const speed = v2 + (a * t) - (this.jerk * (t * t) / 2);
+
+      const delta = this.resolveRuntimeconvXXDelta(t);
+      const posPhase1 = (v2 * t);
+      const posPhase2 = (1 / 2) * (a * (t * t));
+      const position = posPhase1 + posPhase2 - delta;
+      console.log(`position = ${position}, speed = ${speed} <= v2=${v2}, a=${a}, t=${t}, jerk=${this.jerk}`);
+
+      // Change during the curve
+      // console.log(`position=${position} <= posPhase1=${posPhase1}, posPhase2=${posPhase2}, delta=${delta}`);
+      return new runtimeResult(t, speed, position);
     },
     resolveRuntimeconvXXDelta(t) {
       const j = this.jerk;
@@ -262,6 +280,12 @@ export default {
     resolveRuntimeRandom(t) {
       const position = Math.floor(Math.random() * Math.floor(this.accConsts.targetPos));
       return new runtimeResult(t, 0, position)
+    },
+    dbgConvexEstimateMaxSpeedPosition() {
+      const a = this.accConsts.acceleration;
+      const v2 = this.accConsts.convexV2
+      const convexMaxSpeedPos = (v2 + (a * a)/(3*this.jerk)) * (a / this.jerk)
+      console.log(`Estimated max speed will be reached at position = ${convexMaxSpeedPos}`)
     }
   }
 }
