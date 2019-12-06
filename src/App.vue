@@ -41,14 +41,6 @@
             </template>
             <b-form-input v-model.number="accConsts.convexV2"></b-form-input>
           </b-input-group>
-          <b-input-group append="s">
-            <template v-slot:prepend>
-              <b-input-group-text class="bg-light">
-                Initial time (convex)
-              </b-input-group-text>
-            </template>
-            <b-form-input v-model.number="accConsts.convexInitTime"></b-form-input>
-          </b-input-group>
         </div>
 
         <div class="mt-4">
@@ -115,7 +107,6 @@ export default {
       trendData: [],
       accConsts: {
         convexV2: 1000, // um/s
-        convexInitTime: 1, // s
         acceleration: 500, // ums^2
         jerk: 25, // percentage from max
         phase: CONVEX,
@@ -176,8 +167,6 @@ export default {
       this.runtime.stopReason = ""
       this.runtime.startTime = new Date();
 
-      // just for debugging
-      this.dbgConvexEstimateMaxSpeedPosition();
       this.timerId = setInterval(() => {
         const runtimeObj = this.resolveRuntime();
         const pos = runtimeObj.position
@@ -258,19 +247,12 @@ export default {
       return new runtimeResult(t, speed, position);
     },
     resolveRuntimeConvex(t) {
-      const a = this.accConsts.acceleration;
       const v2 = this.accConsts.convexV2;
-      // const v2 = 0
-      const speed = v2 + (a * t) - (this.jerk * (t * t) / 2);
+      const zerotime = Math.sqrt((2*v2)/this.jerk);
+      const a_avg = v2/zerotime
 
-      const delta = this.resolveRuntimeconvXXDelta(t);
-      const posPhase1 = (v2 * t);
-      const posPhase2 = (1 / 2) * (a * (t * t));
-      const position = posPhase1 + posPhase2 - delta;
-      console.log(`position = ${position}, speed = ${speed} <= v2=${v2}, a=${a}, t=${t}, jerk=${this.jerk}`);
-
-      // Change during the curve
-      // console.log(`position=${position} <= posPhase1=${posPhase1}, posPhase2=${posPhase2}, delta=${delta}`);
+      const speed = v2 - (this.jerk * (t * t) / 2);
+      const position = (1 / 2) * (a_avg * (t * t));
       return new runtimeResult(t, speed, position);
     },
     resolveRuntimeconvXXDelta(t) {
@@ -280,12 +262,6 @@ export default {
     resolveRuntimeRandom(t) {
       const position = Math.floor(Math.random() * Math.floor(this.accConsts.targetPos));
       return new runtimeResult(t, 0, position)
-    },
-    dbgConvexEstimateMaxSpeedPosition() {
-      const a = this.accConsts.acceleration;
-      const v2 = this.accConsts.convexV2
-      const convexMaxSpeedPos = (v2 + (a * a)/(3*this.jerk)) * (a / this.jerk)
-      console.log(`Estimated max speed will be reached at position = ${convexMaxSpeedPos}`)
     }
   }
 }
