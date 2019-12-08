@@ -1,28 +1,26 @@
 <template>
   <b-container id="app">
     <b-row align-h="center">
-      <b-col cols="6">
+      <b-col>
         <!--
         <img alt="Vue logo" src="./assets/logo.png" />
         -->
         <b-jumbotron header-level="4">
-          <template v-slot:header>
-            {{runtimeTimeTxt}}
-          </template>
+          <template v-slot:header>{{runtimeTimeTxt}}</template>
           <template v-slot:lead>
             <b-table-simple stacked small>
               <b-tbody>
                 <b-tr>
-                  <b-td stacked-heading="Position"
-                    :class="{'text-danger': runtime.stopReason==='position'}">
-                    {{runtimePosTxt}}
-                  </b-td>
+                  <b-td
+                    stacked-heading="Position"
+                    :class="{'text-danger': runtime.stopReason==='position'}"
+                  >{{runtimePosTxt}}</b-td>
                 </b-tr>
                 <b-tr>
-                  <b-td stacked-heading="Speed"
-                    :class="{'text-danger': runtime.stopReason==='speed'}">
-                    {{runtimeSpeedTxt}}
-                  </b-td>
+                  <b-td
+                    stacked-heading="Speed"
+                    :class="{'text-danger': runtime.stopReason==='speed'}"
+                  >{{runtimeSpeedTxt}}</b-td>
                 </b-tr>
                 <b-tr>
                   <b-td stacked-heading="Avg.spd">{{runtimeAverageSpeedTxt}}</b-td>
@@ -35,9 +33,7 @@
         <div>
           <b-input-group append="um/s">
             <template v-slot:prepend>
-              <b-input-group-text class="bg-light">
-                Initial speed (convex)
-              </b-input-group-text>
+              <b-input-group-text class="bg-light">Initial speed (convex)</b-input-group-text>
             </template>
             <b-form-input v-model.number="accConsts.convexV2"></b-form-input>
           </b-input-group>
@@ -72,6 +68,9 @@
           </b-button-group>
         </div>
       </b-col>
+      <b-col>
+        <b-table :fields="fields" :items="debug.spdIterations" small></b-table>
+      </b-col>
     </b-row>
     <b-row class="mt-5" align-h="center">
       <b-col>
@@ -86,8 +85,8 @@ import TrendLine from "./components/TrendLine.vue";
 const CONCAVE = "concave";
 const LINEAR = "linear";
 const CONVEX = "convex";
-const POSITION = "position"
-const SPEED = "speed"
+const POSITION = "position";
+const SPEED = "speed";
 
 class runtimeResult {
   constructor(time, speed, position) {
@@ -104,6 +103,22 @@ export default {
   },
   data() {
     return {
+      fields: [
+        {
+          // A column that needs custom formatting,
+          // calling formatter 'fullName' in this app
+          key: "pos",
+          label: "Position",
+          formatter: "threeDesimals"
+        },
+        {
+          // A column that needs custom formatting,
+          // calling formatter 'fullName' in this app
+          key: "speed",
+          label: "Speed",
+          formatter: "threeDesimals"
+        }
+      ],
       trendData: [],
       accConsts: {
         convexV2: 1000, // um/s
@@ -121,6 +136,9 @@ export default {
         time: 0,
         stopReason: ""
       },
+      debug: {
+        spdIterations: []
+      },
       timerId: null
     };
   },
@@ -128,65 +146,71 @@ export default {
     isActive() {
       return this.timerId ? true : false;
     },
-    jerk () {
-      return this.accConsts.acceleration * (this.accConsts.jerk / 100)
+    jerk() {
+      return this.accConsts.acceleration * (this.accConsts.jerk / 100);
     },
-    runtimeTimeTxt () {
-      const timeTxt = parseFloat(this.runtime.time).toFixed(3)
-      return `${timeTxt} s`
+    runtimeTimeTxt() {
+      const timeTxt = parseFloat(this.runtime.time).toFixed(3);
+      return `${timeTxt} s`;
     },
-    runtimePosTxt () {
-      const dataTxt = parseFloat(this.runtime.position).toFixed(3)
-      return `${dataTxt} um`
+    runtimePosTxt() {
+      const dataTxt = parseFloat(this.runtime.position).toFixed(3);
+      return `${dataTxt} um`;
     },
     runtimeSpeedTxt() {
-      let dataTxt = parseFloat(this.runtime.speed).toFixed(3)
-      return `${dataTxt} um/s`
+      let dataTxt = parseFloat(this.runtime.speed).toFixed(3);
+      return `${dataTxt} um/s`;
     },
-    runtimeAverageSpeedTxt () {
-      let data
+    runtimeAverageSpeedTxt() {
+      let data;
       if (this.runtime.time) {
-        data = parseFloat(this.runtime.position/this.runtime.time)
+        data = parseFloat(this.runtime.position / this.runtime.time);
       } else {
-        data = parseFloat(0)
+        data = parseFloat(0);
       }
-      const dataTxt = parseFloat(data).toFixed(3)
-      return `${dataTxt} um/s`
+      const dataTxt = parseFloat(data).toFixed(3);
+      return `${dataTxt} um/s`;
     }
   },
   methods: {
     reset() {
       this.trendData = [];
-      this.runtime.position = 0
-      this.runtime.time = 0
-      this.runtime.speed = 0
-      this.runtime.stopReason = ""
+      this.runtime.position = 0;
+      this.runtime.time = 0;
+      this.runtime.speed = 0;
+      this.runtime.stopReason = "";
+      this.debug.spdIterations = [];
     },
     start() {
       this.stop();
-      this.runtime.stopReason = ""
+      this.runtime.stopReason = "";
       this.runtime.startTime = new Date();
 
       this.timerId = setInterval(() => {
         const runtimeObj = this.resolveRuntime();
-        const pos = runtimeObj.position
-        const speed = runtimeObj.speed
+        const pos = runtimeObj.position;
+        const speed = runtimeObj.speed;
         // Stop when we have reached
         // ... position or speed limits
-        let stopReason
+        let stopReason;
         // Special nadling for convex
         if (this.accConsts.phase === CONVEX) {
           if (speed <= 0) {
-            stopReason = SPEED
+            stopReason = SPEED;
           }
         } else if (pos >= this.accConsts.targetPos || pos <= 0) {
-          stopReason = POSITION
+          stopReason = POSITION;
         } else if (speed >= this.accConsts.targetSpeed) {
-          stopReason = SPEED
+          stopReason = SPEED;
         }
-        if (stopReason) { // This works for acceleration only
-          this.stop()
-          this.runtime.stopReason = stopReason
+        this.debug.spdIterations.push({
+          speed: speed,
+          pos: pos
+        });
+        if (stopReason) {
+          // This works for acceleration only
+          this.stop();
+          this.runtime.stopReason = stopReason;
         } else {
           // Draw the curve (speed/pos)
           // this.trendData.push(pos);
@@ -223,18 +247,18 @@ export default {
       } else if (this.accConsts.phase === CONVEX) {
         retVal = this.resolveRuntimeConvex(timeStamp);
       } else {
-        retVal = this.resolveRuntimeRandom(timeStamp)
+        retVal = this.resolveRuntimeRandom(timeStamp);
       }
       return retVal;
     },
     resolveRuntimeConcave(t) {
       const v0 = 0;
-      const delta = this.resolveRuntimeconvXXDelta(t)
+      const delta = this.resolveRuntimeconvXXDelta(t);
 
-      const position = (v0 * t) + delta
-      const speed = v0 + (this.jerk*(t*t)/2);
+      const position = v0 * t + delta;
+      const speed = v0 + (this.jerk * (t * t)) / 2;
 
-      return new runtimeResult(t, speed, position)
+      return new runtimeResult(t, speed, position);
     },
     resolveRuntimeLinear(t) {
       const a = this.accConsts.acceleration;
@@ -242,29 +266,37 @@ export default {
       const v0 = 0;
       const p = this.runtime.position;
 
-      const position = (v0 * t) + (1 / 2) * (a * (t * t));
-      const speed = (v0 * t) + (a * t);
+      const position = v0 * t + (1 / 2) * (a * (t * t));
+      const speed = v0 * t + a * t;
       return new runtimeResult(t, speed, position);
     },
     resolveRuntimeConvex(t) {
       const v2 = this.accConsts.convexV2;
-      const zerotime = Math.sqrt((2*v2)/this.jerk);
-      const a_avg = v2/zerotime
+      const zerotime = Math.sqrt((2 * v2) / this.jerk);
+      console.log(
+        `convex: zerotime: ${zerotime} <= v2 = ${v2}, jerk = ${this.jerk}`
+      );
+      const a_avg = v2 / zerotime;
 
-      const speed = v2 - (this.jerk * (t * t) / 2);
+      const speed = v2 - (this.jerk * (t * t)) / 2;
       const position = (1 / 2) * (a_avg * (t * t));
       return new runtimeResult(t, speed, position);
     },
     resolveRuntimeconvXXDelta(t) {
       const j = this.jerk;
-      return j * (t * t * t) / 6;
+      return (j * (t * t * t)) / 6;
     },
     resolveRuntimeRandom(t) {
-      const position = Math.floor(Math.random() * Math.floor(this.accConsts.targetPos));
-      return new runtimeResult(t, 0, position)
+      const position = Math.floor(
+        Math.random() * Math.floor(this.accConsts.targetPos)
+      );
+      return new runtimeResult(t, 0, position);
+    },
+    threeDesimals(value) {
+      return parseFloat(value).toFixed(3);
     }
   }
-}
+};
 </script>
 
 <style>
@@ -280,5 +312,4 @@ export default {
 .em {
   font-style: italic;
 }
-
 </style>
