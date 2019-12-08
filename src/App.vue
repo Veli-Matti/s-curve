@@ -69,7 +69,13 @@
         </div>
       </b-col>
       <b-col>
-        <b-table :fields="fields" :items="debug.spdIterations" small></b-table>
+        <b-table
+          :fields="fields"
+          :items="debug.spdIterations"
+          head-variant="light"
+          sticky-header="740px"
+          small
+        ></b-table>
       </b-col>
     </b-row>
     <b-row class="mt-5" align-h="center">
