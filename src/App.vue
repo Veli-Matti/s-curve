@@ -107,6 +107,13 @@ export default {
         {
           // A column that needs custom formatting,
           // calling formatter 'fullName' in this app
+          key: "time",
+          label: "Time",
+          formatter: "threeDesimals"
+        },
+        {
+          // A column that needs custom formatting,
+          // calling formatter 'fullName' in this app
           key: "pos",
           label: "Position",
           formatter: "threeDesimals"
@@ -190,6 +197,7 @@ export default {
         const runtimeObj = this.resolveRuntime();
         const pos = runtimeObj.position;
         const speed = runtimeObj.speed;
+        const time = runtimeObj.time;
         // Stop when we have reached
         // ... position or speed limits
         let stopReason;
@@ -204,6 +212,7 @@ export default {
           stopReason = SPEED;
         }
         this.debug.spdIterations.push({
+          time: time,
           speed: speed,
           pos: pos
         });
