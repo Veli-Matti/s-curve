@@ -69,6 +69,11 @@
         </div>
       </b-col>
       <b-col>
+        <div class="mb-3">
+          <span>Convex 0 um/s breakzone length: {{runtimeBreakZoneTxt}}
+            <b-button variant="outline-secondary" @click="estimateRuntimeDuration">Calculate</b-button>
+          </span>
+        </div>
         <b-table
           :fields="fields"
           :items="debug.spdIterations"
@@ -147,7 +152,8 @@ export default {
         position: 0,
         speed: 0,
         time: 0,
-        stopReason: ""
+        stopReason: "",
+        breakZoneEstimation: 0
       },
       debug: {
         spdIterations: []
@@ -183,6 +189,10 @@ export default {
       }
       const dataTxt = parseFloat(data).toFixed(3);
       return `${dataTxt} um/s`;
+    },
+    runtimeBreakZoneTxt() {
+      const dataTxt = parseFloat(this.runtime.breakZoneEstimation).toFixed(3);
+      return `${dataTxt} um`;
     }
   },
   methods: {
@@ -192,6 +202,7 @@ export default {
       this.runtime.time = 0;
       this.runtime.speed = 0;
       this.runtime.stopReason = "";
+      this.runtime.breakZoneEstimation = 0;
       this.debug.spdIterations = [];
     },
     start() {
@@ -307,8 +318,30 @@ export default {
       );
       return new runtimeResult(t, 0, position);
     },
+    estimateRuntimeDuration() {
+      this.runtime.breakZoneEstimation = this.mcu_pwmAccCalcBreakZone(this.accConsts.convexV2,
+        this.accConsts.acceleration*(this.accConsts.jerk/100))
+    },
     threeDesimals(value) {
       return parseFloat(value).toFixed(3);
+    },
+    mcu_pwmAccCalcBreakZone(curSpeed, breakJerk) {
+      let retval = 0;
+      if (breakJerk) {
+          let zerotime = Math.sqrt((2.0*curSpeed)/(breakJerk));
+          if (zerotime) {
+              const a_avg = curSpeed/zerotime;
+              const breakZoneUm = 0.5*(a_avg*(zerotime*zerotime));
+              retval = breakZoneUm;
+              const debugObj = {
+                zerotime: zerotime,
+                a_avg: a_avg,
+                breakZoneUm: breakZoneUm
+              }
+              console.table(debugObj)
+          }
+      }
+      return retval;
     }
   }
 };
