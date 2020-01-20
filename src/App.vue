@@ -70,7 +70,8 @@
       </b-col>
       <b-col>
         <div class="mb-3">
-          <span>Convex 0 um/s breakzone length: {{runtimeBreakZoneTxt}}
+          <span>
+            Convex 0 um/s breakzone length: {{runtimeBreakZoneTxt}}
             <b-button variant="outline-secondary" @click="estimateRuntimeDuration">Calculate</b-button>
           </span>
         </div>
@@ -78,7 +79,7 @@
           :fields="fields"
           :items="debug.spdIterations"
           head-variant="light"
-          sticky-header="740px"
+          sticky-header="670px"
           small
         ></b-table>
       </b-col>
@@ -319,8 +320,10 @@ export default {
       return new runtimeResult(t, 0, position);
     },
     estimateRuntimeDuration() {
-      this.runtime.breakZoneEstimation = this.mcu_pwmAccCalcBreakZone(this.accConsts.convexV2,
-        this.accConsts.acceleration*(this.accConsts.jerk/100))
+      this.runtime.breakZoneEstimation = this.mcu_pwmAccCalcBreakZone(
+        this.accConsts.convexV2,
+        this.accConsts.acceleration * (this.accConsts.jerk / 100)
+      );
     },
     threeDesimals(value) {
       return parseFloat(value).toFixed(3);
@@ -328,18 +331,18 @@ export default {
     mcu_pwmAccCalcBreakZone(curSpeed, breakJerk) {
       let retval = 0;
       if (breakJerk) {
-          let zerotime = Math.sqrt((2.0*curSpeed)/(breakJerk));
-          if (zerotime) {
-              const a_avg = curSpeed/zerotime;
-              const breakZoneUm = 0.5*(a_avg*(zerotime*zerotime));
-              retval = breakZoneUm;
-              const debugObj = {
-                zerotime: zerotime,
-                a_avg: a_avg,
-                breakZoneUm: breakZoneUm
-              }
-              console.table(debugObj)
-          }
+        let zerotime = Math.sqrt((2.0 * curSpeed) / breakJerk);
+        if (zerotime) {
+          const a_avg = curSpeed / zerotime;
+          const breakZoneUm = 0.5 * (a_avg * (zerotime * zerotime));
+          retval = breakZoneUm;
+          const debugObj = {
+            zerotime: zerotime,
+            a_avg: a_avg,
+            breakZoneUm: breakZoneUm
+          };
+          console.table(debugObj);
+        }
       }
       return retval;
     }
