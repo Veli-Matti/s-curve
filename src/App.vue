@@ -306,7 +306,9 @@ export default {
       const a_avg = v2 / zerotime;
 
       const speed = v2 - (this.jerk * (t * t)) / 2;
-      const position = (1 / 2) * (a_avg * (t * t));
+      // const position = (1 / 2) * (a_avg * (t * t));
+      const position =
+        (1 / 2) * (a_avg * (t * t)) + (1 / 6) * this.jerk * Math.pow(t, 3);
       return new runtimeResult(t, speed, position);
     },
     resolveRuntimeconvXXDelta(t) {
@@ -334,7 +336,8 @@ export default {
         let zerotime = Math.sqrt((2.0 * curSpeed) / breakJerk);
         if (zerotime) {
           const a_avg = curSpeed / zerotime;
-          const breakZoneUm = 0.5 * (a_avg * (zerotime * zerotime));
+          // const breakZoneUm = 0.5 * (a_avg * (zerotime * zerotime));
+          const breakZoneUm = 0.5 * (a_avg * (zerotime * zerotime)) + (1 / 6) * breakJerk * (zerotime * zerotime * zerotime);
           retval = breakZoneUm;
           const debugObj = {
             zerotime: zerotime,
