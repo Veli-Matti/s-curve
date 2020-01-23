@@ -283,8 +283,10 @@ export default {
       const delta = this.resolveRuntimeconvXXDelta(t);
 
       const position = v0 * t + delta;
-      const speed = v0 + (this.jerk * (t * t)) / 2;
-
+      const speed = v0 + (this.jerk / 2) * Math.pow(t, 2);
+      console.log(
+        `concave: this.jerk: ${this.jerk}, time: ${t}, speed: ${speed}, position = ${position}`
+      );
       return new runtimeResult(t, speed, position);
     },
     resolveRuntimeLinear(t) {
@@ -293,27 +295,42 @@ export default {
       const v0 = 0;
       const p = this.runtime.position;
 
-      const position = v0 * t + (1 / 2) * (a * (t * t));
+      const position = v0 * t + (a / 2) * Math.pow(t, 2);
       const speed = v0 * t + a * t;
       return new runtimeResult(t, speed, position);
     },
     resolveRuntimeConvex(t) {
-      const v2 = this.accConsts.convexV2;
-      const zerotime = Math.sqrt((2 * v2) / this.jerk);
+      /*
+      const v0 = this.accConsts.convexV2;
+      const zerotime = Math.sqrt((2 * v0) / this.jerk);
       console.log(
-        `convex: zerotime: ${zerotime} <= v2 = ${v2}, jerk = ${this.jerk}`
+        `convex: zerotime: ${zerotime} <= v0 = ${v0}, jerk = ${this.jerk}`
       );
-      const a_avg = v2 / zerotime;
-
-      const speed = v2 - (this.jerk * (t * t)) / 2;
+      const a_avg = v0 / zerotime;
+      const speed = v0 - (this.jerk / 2.0) * (t * t);
       // const position = (1 / 2) * (a_avg * (t * t));
+      */
+      // https://www.pmdcorp.com/resources/type/articles/get/mathematics-of-motion-control-profiles-article
+      // We assume here that we have reached the max acceration already and a phase starts at zero position
+      const v0 = this.accConsts.convexV2;
+      const p0 = 0;
+      const a0 = 0;
+
+      // VT = V0 + A0T + 1/2 JT2
+      const speed = v0 + a0 * t - (this.jerk / 2) * Math.pow(t, 2);
+
+      // PT = P0 + V0T + 1/2A0T2 + 1/6JT3
       const position =
-        (1 / 2) * (a_avg * (t * t)) + (1 / 6) * this.jerk * Math.pow(t, 3);
+        p0 +
+        v0 * t +
+        (a0 / 2) * Math.pow(t, 2) +
+        (this.jerk / 6) * Math.pow(t, 3);
+
       return new runtimeResult(t, speed, position);
     },
     resolveRuntimeconvXXDelta(t) {
       const j = this.jerk;
-      return (j * (t * t * t)) / 6;
+      return (j / 6) * Math.pow(t, 3);
     },
     resolveRuntimeRandom(t) {
       const position = Math.floor(
@@ -333,15 +350,16 @@ export default {
     mcu_pwmAccCalcBreakZone(curSpeed, breakJerk) {
       let retval = 0;
       if (breakJerk) {
-        let zerotime = Math.sqrt((2.0 * curSpeed) / breakJerk);
+        let zerotime = Math.sqrt((2 * curSpeed) / breakJerk);
         if (zerotime) {
-          const a_avg = curSpeed / zerotime;
+          // const a_avg = curSpeed / zerotime;
           // const breakZoneUm = 0.5 * (a_avg * (zerotime * zerotime));
-          const breakZoneUm = 0.5 * (a_avg * (zerotime * zerotime)) + (1 / 6) * breakJerk * (zerotime * zerotime * zerotime);
+          const breakZoneUm =
+            curSpeed * zerotime + (breakJerk / 6) * Math.pow(zerotime, 3);
           retval = breakZoneUm;
           const debugObj = {
             zerotime: zerotime,
-            a_avg: a_avg,
+            // a_avg: a_avg,
             breakZoneUm: breakZoneUm
           };
           console.table(debugObj);
