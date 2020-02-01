@@ -313,16 +313,6 @@ export default {
       return new runtimeResult(t, speed, position);
     },
     resolveRuntimeConvex(t) {
-      /*
-      const v0 = this.accConsts.convexV2;
-      const zerotime = Math.sqrt((2 * v0) / this.jerk);
-      console.log(
-        `convex: zerotime: ${zerotime} <= v0 = ${v0}, jerk = ${this.jerk}`
-      );
-      const a_avg = v0 / zerotime;
-      const speed = v0 - (this.jerk / 2.0) * (t * t);
-      // const position = (1 / 2) * (a_avg * (t * t));
-      */
       // https://www.pmdcorp.com/resources/type/articles/get/mathematics-of-motion-control-profiles-article
       // We assume here that we have reached the max acceration already and a phase starts at zero position
       const v0 = this.accConsts.convexV2;
@@ -393,8 +383,14 @@ export default {
     },
     checkRuntimeDistance() {
       let result = 0;
-      this.debug.spdIterations.forEach(iter => result += iter.delta)
-      console.log(`Checksum distance: ${result} vs ${this.debug.spdIterations.slice(-1).pop().pos}`)
+      this.debug.spdIterations.forEach(iter => result += iter.delta);
+      result = parseFloat(result).toFixed(3);
+      this.$bvToast.toast(`Result: ${result} um`, {
+        title: 'Calculated distance',
+        toaster: 'b-toaster-bottom-right',
+        variant: "info",
+        autoHideDelay: 5000,
+      })
     }
   }
 };
