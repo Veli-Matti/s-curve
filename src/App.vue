@@ -237,11 +237,13 @@ export default {
           stopReason = SPEED;
         }
 
+        const delta = this.stepDeltaPos(pos, time);
+
         this.debug.spdIterations.push({
           time: time,
           speed: speed,
           pos: pos,
-          delta: this.stepDeltaPos(pos, time)
+          delta: delta
         });
         if (stopReason) {
           // This works for acceleration only
@@ -251,6 +253,7 @@ export default {
           // Draw the curve (speed/pos)
           // this.trendData.push(pos);
           this.trendData.push(speed);
+          //this.trendData.push(delta);
 
           this.runtime.position = pos;
           this.runtime.speed = speed;
@@ -377,12 +380,14 @@ export default {
       return retval;
     },
     stepDeltaPos(currentPos, time) {
-      let retVal = 0;
+      let refTime = 0;
+      let refPos = 0;
       const lastIter = this.debug.spdIterations.slice(-1).pop();
       if (lastIter) {
-        const deltaTime = time - lastIter.time;
-        retVal = (currentPos - lastIter.pos) / (deltaTime / (this.accConsts.period / 1000));
+        refTime = lastIter.time;
+        refPos = lastIter.pos;
       }
+      const retVal = (currentPos - refPos) / ((time - refTime) / (this.accConsts.period / 1000));
       return retVal;
     }
   }
