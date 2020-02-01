@@ -133,6 +133,13 @@ export default {
         {
           // A column that needs custom formatting,
           // calling formatter 'fullName' in this app
+          key: "delta",
+          label: "Norm. step",
+          formatter: "threeDesimals"
+        },
+        {
+          // A column that needs custom formatting,
+          // calling formatter 'fullName' in this app
           key: "speed",
           label: "Speed",
           formatter: "threeDesimals"
@@ -229,10 +236,12 @@ export default {
         } else if (speed >= this.accConsts.targetSpeed) {
           stopReason = SPEED;
         }
+
         this.debug.spdIterations.push({
           time: time,
           speed: speed,
-          pos: pos
+          pos: pos,
+          delta: this.stepDeltaPos(pos, time)
         });
         if (stopReason) {
           // This works for acceleration only
@@ -323,7 +332,7 @@ export default {
       const position =
         p0 +
         v0 * t +
-        (a0 / 2) * Math.pow(t, 2) +
+        (a0 / 2) * Math.pow(t, 2) -
         (this.jerk / 6) * Math.pow(t, 3);
 
       return new runtimeResult(t, speed, position);
@@ -366,6 +375,15 @@ export default {
         }
       }
       return retval;
+    },
+    stepDeltaPos(currentPos, time) {
+      let retVal = 0;
+      const lastIter = this.debug.spdIterations.slice(-1).pop();
+      if (lastIter) {
+        const deltaTime = time - lastIter.time;
+        retVal = (currentPos - lastIter.pos) / (deltaTime / (this.accConsts.period / 1000));
+      }
+      return retVal;
     }
   }
 };
