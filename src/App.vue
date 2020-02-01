@@ -73,6 +73,7 @@
           <span>
             Convex 0 um/s breakzone length: {{runtimeBreakZoneTxt}}
             <b-button variant="outline-secondary" @click="estimateRuntimeDuration">Calculate</b-button>
+            <b-button variant="outline-secondary" @click="checkRuntimeDistance" :disabled="!debug.spdIterations.length">Check</b-button>
           </span>
         </div>
         <b-table
@@ -389,6 +390,11 @@ export default {
       }
       const retVal = (currentPos - refPos) / ((time - refTime) / (this.accConsts.period / 1000));
       return retVal;
+    },
+    checkRuntimeDistance() {
+      let result = 0;
+      this.debug.spdIterations.forEach(iter => result += iter.delta)
+      console.log(`Checksum distance: ${result} vs ${this.debug.spdIterations.slice(-1).pop().pos}`)
     }
   }
 };
